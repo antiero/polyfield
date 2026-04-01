@@ -9,5 +9,11 @@ export interface AppState {
   waveform: Waveform;
   gridSteps: number;
   motionMode: 'free' | 'arp';
-  arpRate: number;
+  bpm: number;
+  clockSource: 'internal' | 'external';
+  mpeEnabled: boolean;
+  midiChannel: number; // 1-16
+  touchMode: 'mono' | 'poly';
+  delayEnabled: boolean;
+  delayMix: number;
 }
