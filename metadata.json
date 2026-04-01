@@ -1,0 +1,5 @@
+{
+  "name": "PolyField",
+  "description": "A browser-native harmonic performance instrument that transforms gesture into musically coherent melody, harmony, and motion.",
+  "requestFramePermissions": ["midi"]
+}
