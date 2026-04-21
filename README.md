@@ -1,3 +1,5 @@
+## Polyfield is a 'Music Mouse' inspired polyphonic MPE Touch field
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
