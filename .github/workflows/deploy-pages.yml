@@ -33,7 +33,11 @@ jobs:
           BASE_PATH: /${{ github.event.repository.name }}/
         run: |
           test -f dist/index.html
-          node -e "const fs=require('fs'); const html=fs.readFileSync('dist/index.html','utf8'); const base=process.env.BASE_PATH; if(!html.includes(`"${base}`) && !html.includes(`'${base}`) && !html.includes(`(${base}`) && !html.includes(`${base}assets/`)){ console.error('Expected BASE_PATH prefix not found in dist/index.html:', base); process.exit(1);} console.log('Verified BASE_PATH prefix in dist/index.html:', base);"
+          if ! grep -q "${BASE_PATH}assets/" dist/index.html; then
+            echo "Expected BASE_PATH prefix not found in dist/index.html: ${BASE_PATH}"
+            exit 1
+          fi
+          echo "Verified BASE_PATH prefix in dist/index.html: ${BASE_PATH}"
 
         run: npm install
 
