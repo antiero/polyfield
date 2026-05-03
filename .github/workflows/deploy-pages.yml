@@ -35,6 +35,11 @@ jobs:
           npm i --no-save @rollup/rollup-linux-x64-gnu
           node -e "require.resolve('@rollup/rollup-linux-x64-gnu')"
 
+      - name: Work around npm optional dependency bug for Lightning CSS
+        run: |
+          npm i --no-save lightningcss-linux-x64-gnu
+          node -e "require.resolve('lightningcss-linux-x64-gnu')"
+
       - name: Build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
