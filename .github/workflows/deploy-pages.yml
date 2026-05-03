@@ -31,6 +31,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+
+      - name: Install Linux optional native deps
+        run: npm install --no-save @rollup/rollup-linux-x64-gnu
+
       - name: Build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
