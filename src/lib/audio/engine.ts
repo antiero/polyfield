@@ -1,4 +1,4 @@
-import { ScaleName } from '../types';
+import type { ScaleName } from '../types';
 
 export const SCALES: Record<ScaleName, number[]> = {
   Major: [0, 2, 4, 5, 7, 9, 11],

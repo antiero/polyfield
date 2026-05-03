@@ -16,7 +16,7 @@
   let isControlsOpen = false; let isLargeScreen = true; let surfaceRef: HTMLDivElement;
   let arpIndex = 0; let arpTrigger = 0;
   $: activeNotes = new Set([...pointerNotes, ...midiNotes]);
-  $: allHeldNotes = Array.from(new Set(Object.values(pointers).flatMap((p)=>p.notes))).sort((a,b)=>a-b);
+  $: allHeldNotes = Array.from(new Set(Object.values(pointers).flatMap((p)=>calculateNotes(p.x,p.y)))).sort((a,b)=>a-b);
 
   const calculateNotes = (x:number,y:number)=>{
     const dx = Math.floor(x*state.gridSteps), dy = Math.floor((1-y)*state.gridSteps); const notes = new Set<number>();
@@ -49,7 +49,7 @@
   $: midi.mpeEnabled = state.mpeEnabled; $: midi.midiChannel = state.midiChannel;
   $: audio.setWaveform(state.waveform); $: audio.setDelay(state.delayEnabled, state.delayMix);
   $: if(selectedMidiOut) midi.setOutput(selectedMidiOut);
-  $: { for(const [id,p] of Object.entries(pointers)){ const nn=calculateNotes(p.x,p.y); if(JSON.stringify(nn)!==JSON.stringify(p.notes)) pointers[+id]={...p,notes:nn}; } pointers=pointers; syncFreeMode(); if(state.motionMode==='arp'&&allHeldNotes.length===0){ for(const n of pointerNotes){if(!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);}} pointerNotes=new Set(); arpIndex=0; }}
+  $: { syncFreeMode(); if(state.motionMode==='arp'&&allHeldNotes.length===0){ for(const n of pointerNotes){if(!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);}} pointerNotes=new Set(); arpIndex=0; }}
 
   function pointerDown(e: PointerEvent){ audio.init(); surfaceRef.setPointerCapture(e.pointerId); const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const notes=calculateNotes(x,y); pointers = state.touchMode==='mono'?{[e.pointerId]:{x,y,notes}}:{...pointers,[e.pointerId]:{x,y,notes}}; }
   function pointerMove(e: PointerEvent){ if(!pointers[e.pointerId]) return; const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); pointers={...pointers,[e.pointerId]:{x,y,notes:calculateNotes(x,y)}}; }
@@ -68,7 +68,7 @@
 <section><h2 class="text-xs font-bold uppercase border-b pb-2">Presets</h2><div class="flex gap-2 mt-2"><button class="flex-1 p-2 border" on:click={savePreset}><Save size={14}/> Save</button><button class="flex-1 p-2 border" on:click={loadPreset}><Download size={14}/> Load</button></div></section>
 </div></aside>
 {/if}
-<div class="flex-1 relative bg-[#141414] p-2 lg:p-8"><div bind:this={surfaceRef} class="w-full h-full relative border bg-[#1A1A1A]" on:pointerdown={pointerDown} on:pointermove={pointerMove} on:pointerup={pointerUp} on:pointercancel={pointerUp}>
+<div class="flex-1 relative bg-[#141414] p-2 lg:p-8"><div bind:this={surfaceRef} role="application" aria-label="Polyfield touch surface" tabindex="0" class="w-full h-full relative border bg-[#1A1A1A]" on:pointerdown={pointerDown} on:pointermove={pointerMove} on:pointerup={pointerUp} on:pointercancel={pointerUp}>
 {#each Array.from({length: state.gridSteps}) as _, i}<div class="absolute left-0 right-0 h-px bg-white/10" style={`top:${(i/state.gridSteps)*100}%`}></div><div class="absolute top-0 bottom-0 w-px bg-white/10" style={`left:${(i/state.gridSteps)*100}%`}></div>{/each}
 {#each Object.entries(pointers) as [id,p]}<div class="absolute top-0 bottom-0 bg-[#F27D26]/20" style={`left:${Math.floor(p.x*state.gridSteps)/state.gridSteps*100}%;width:${1/state.gridSteps*100}%`}></div><div class="absolute left-0 right-0 bg-[#00FF00]/20" style={`top:${Math.floor(p.y*state.gridSteps)/state.gridSteps*100}%;height:${1/state.gridSteps*100}%`}></div><div class="absolute w-6 h-6 border-2 border-white rounded-full -translate-x-1/2 -translate-y-1/2" style={`left:${p.x*100}%;top:${p.y*100}%`}></div>{/each}
 <div class="absolute bottom-3 left-3 flex flex-wrap gap-1">{#each Array.from(activeNotes).sort((a,b)=>a-b) as note}<div class="px-2 py-1 bg-white/10 text-white text-xs rounded">{note}</div>{/each}</div>
