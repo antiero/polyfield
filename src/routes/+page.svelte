@@ -16,7 +16,7 @@
   let isControlsOpen = false; let isLargeScreen = true; let surfaceRef: HTMLDivElement;
   let arpIndex = 0; let arpTrigger = 0;
   $: activeNotes = new Set([...pointerNotes, ...midiNotes]);
-  $: allHeldNotes = Array.from(new Set(Object.values(pointers).flatMap((p)=>p.notes))).sort((a,b)=>a-b);
+  $: allHeldNotes = Array.from(new Set(Object.values(pointers).flatMap((p)=>calculateNotes(p.x,p.y)))).sort((a,b)=>a-b);
 
   const calculateNotes = (x:number,y:number)=>{
     const dx = Math.floor(x*state.gridSteps), dy = Math.floor((1-y)*state.gridSteps); const notes = new Set<number>();
@@ -49,7 +49,7 @@
   $: midi.mpeEnabled = state.mpeEnabled; $: midi.midiChannel = state.midiChannel;
   $: audio.setWaveform(state.waveform); $: audio.setDelay(state.delayEnabled, state.delayMix);
   $: if(selectedMidiOut) midi.setOutput(selectedMidiOut);
-  $: { for(const [id,p] of Object.entries(pointers)){ const nn=calculateNotes(p.x,p.y); if(JSON.stringify(nn)!==JSON.stringify(p.notes)) pointers[+id]={...p,notes:nn}; } pointers=pointers; syncFreeMode(); if(state.motionMode==='arp'&&allHeldNotes.length===0){ for(const n of pointerNotes){if(!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);}} pointerNotes=new Set(); arpIndex=0; }}
+  $: { syncFreeMode(); if(state.motionMode==='arp'&&allHeldNotes.length===0){ for(const n of pointerNotes){if(!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);}} pointerNotes=new Set(); arpIndex=0; }}
 
   function pointerDown(e: PointerEvent){ audio.init(); surfaceRef.setPointerCapture(e.pointerId); const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const notes=calculateNotes(x,y); pointers = state.touchMode==='mono'?{[e.pointerId]:{x,y,notes}}:{...pointers,[e.pointerId]:{x,y,notes}}; }
   function pointerMove(e: PointerEvent){ if(!pointers[e.pointerId]) return; const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); pointers={...pointers,[e.pointerId]:{x,y,notes:calculateNotes(x,y)}}; }
