@@ -28,17 +28,17 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
-
-
-      - name: Install Linux optional native deps
-        run: npm install --no-save @rollup/rollup-linux-x64-gnu
+        run: npm ci
 
       - name: Build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
 
+      - name: Verify Pages artifact paths
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+        run: test -f dist/index.html && grep -q "${BASE_PATH}assets/" dist/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
