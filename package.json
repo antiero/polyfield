@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist .svelte-kit",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "lint": "npm run check"
+    "lint": "npm run check",
+    "test:build": "npm run check && npm run build -- --base /polyfield/"
   },
   "dependencies": {
     "@sveltejs/kit": "^2.21.1",
