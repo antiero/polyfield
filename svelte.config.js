@@ -1,6 +1,11 @@
 import adapter from '@sveltejs/adapter-static';
 
-const base = process.env.BASE_PATH ?? '';
+const rawBase = process.env.BASE_PATH ?? '';
+const normalizedBase = rawBase.trim();
+const base =
+  !normalizedBase || normalizedBase === '/'
+    ? ''
+    : normalizedBase.replace(/\/+$/, '');
 
 const config = {
   kit: {
