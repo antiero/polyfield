@@ -11,11 +11,14 @@ const config = {
   kit: {
     adapter: adapter({
       pages: 'dist',
-      assets: 'dist'
+      assets: 'dist',
+      fallback: '404.html'
     }),
     paths: {
       base
-    }
+    },
+    appDir: 'assets',
+    trailingSlash: 'always'
   }
 };
 
