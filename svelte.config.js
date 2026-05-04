@@ -17,8 +17,7 @@ const config = {
     paths: {
       base
     },
-    appDir: 'assets',
-    trailingSlash: 'always'
+    appDir: 'assets'
   }
 };
 
