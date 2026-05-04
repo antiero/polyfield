@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist .svelte-kit",
-    "lint": "svelte-check --tsconfig ./tsconfig.json"
+    "lint": "svelte-check --tsconfig ./tsconfig.json",
+    "prebuild": "svelte-kit sync"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
