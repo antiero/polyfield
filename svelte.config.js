@@ -15,7 +15,8 @@ const config = {
       fallback: '404.html'
     }),
     paths: {
-      base
+      base,
+      relative: false
     },
     appDir: 'assets'
   }
