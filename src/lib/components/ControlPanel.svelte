@@ -19,7 +19,7 @@
 </button>
 </div>
   {/if}
-  <div class="flex-1 overflow-y-auto overscroll-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] p-6 space-y-8 pb-24 xl:pb-8">
+  <div class="flex-1 overflow-y-auto overscroll-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] pt-8 p-6 space-y-8 pb-24 xl:pt-10 xl:pb-8">
     <section class="space-y-4">
 <h2 class="text-xs font-bold uppercase tracking-widest border-b border-[#141414] pb-2">Harmony</h2>
 <select class="w-full bg-transparent border border-[#141414] p-2 text-sm uppercase" bind:value={state.scale}>{#each Object.keys(SCALES) as s}<option value={s}>{s}</option>{/each}</select>
