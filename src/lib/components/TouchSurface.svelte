@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { ChevronRight } from 'lucide-svelte';
-
   export let state: { gridSteps: number };
   export let pointers: Record<string, { x: number; y: number; notes: number[] }>;
   export let activeNotes: Set<number>;
@@ -56,13 +54,6 @@
       </div>
     {/if}
 
-    {#if !isControlsOpen}
-      <button
-        on:click|stopPropagation={onOpenControls}
-        class="xl:hidden absolute top-4 left-4 p-2 bg-white/5 border border-white/10 rounded-full text-white/50"
-      >
-        <ChevronRight size={20} />
-      </button>
-    {/if}
+
   </div>
 </div>

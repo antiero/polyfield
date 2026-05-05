@@ -1,4 +1,22 @@
-export type ScaleName = 'Major' | 'Minor' | 'PentatonicMajor' | 'PentatonicMinor' | 'Dorian' | 'Mixolydian' | 'Chromatic';
+export type ScaleName =
+  | 'Major'
+  | 'Minor'
+  | 'NaturalMinor'
+  | 'HarmonicMinor'
+  | 'MelodicMinor'
+  | 'Dorian'
+  | 'Phrygian'
+  | 'Lydian'
+  | 'Mixolydian'
+  | 'Aeolian'
+  | 'Locrian'
+  | 'PentatonicMajor'
+  | 'PentatonicMinor'
+  | 'Blues'
+  | 'WholeTone'
+  | 'Diminished'
+  | 'Augmented'
+  | 'Chromatic';
 export type Waveform = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
 export interface AppState {
