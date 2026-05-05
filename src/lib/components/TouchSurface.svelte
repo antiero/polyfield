@@ -1,13 +1,11 @@
 <script lang="ts">
-  import { ChevronRight, Maximize2, Minimize2 } from 'lucide-svelte';
+  import { ChevronRight } from 'lucide-svelte';
 
   export let state: { gridSteps: number };
   export let pointers: Record<string, { x: number; y: number; notes: number[] }>;
   export let activeNotes: Set<number>;
   export let isControlsOpen = false;
-  export let isSurfaceFullscreen = false;
   export let onOpenControls: () => void = () => {};
-  export let onToggleFullscreen: () => void = () => {};
   export let pointerDown: (e: PointerEvent) => void;
   export let pointerMove: (e: PointerEvent) => void;
   export let pointerUp: (e: PointerEvent) => void;
@@ -58,7 +56,7 @@
       </div>
     {/if}
 
-    {#if !isControlsOpen && !isSurfaceFullscreen}
+    {#if !isControlsOpen}
       <button
         on:click|stopPropagation={onOpenControls}
         class="xl:hidden absolute top-4 left-4 p-2 bg-white/5 border border-white/10 rounded-full text-white/50"
@@ -66,17 +64,5 @@
         <ChevronRight size={20} />
       </button>
     {/if}
-
-    <button
-      on:click|stopPropagation={onToggleFullscreen}
-      class="absolute top-4 right-4 p-2 bg-white/5 border border-white/10 rounded-full text-white/70"
-      aria-label={isSurfaceFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-    >
-      {#if isSurfaceFullscreen}
-        <Minimize2 size={18} />
-      {:else}
-        <Maximize2 size={18} />
-      {/if}
-    </button>
   </div>
 </div>
