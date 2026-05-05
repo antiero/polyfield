@@ -34,4 +34,5 @@ export interface AppState {
   touchMode: 'mono' | 'poly';
   delayEnabled: boolean;
   delayMix: number;
+  showOscilloscope: boolean;
 }

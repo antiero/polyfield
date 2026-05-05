@@ -90,6 +90,14 @@
 <span class="opacity-70 uppercase">BPM</span>
 <input type="number" class="w-12 bg-transparent border-b border-[#141414] text-right focus:outline-none" value={state.bpm} min="30" max="300" on:change={(e) => state={...state,bpm:parseInt((e.currentTarget as HTMLInputElement).value)||120}} />
 </div>{/if}</section>
+
+    <section class="space-y-4">
+<h2 class="text-xs font-bold uppercase tracking-widest border-b border-[#141414] pb-2">Debug</h2>
+<div class="flex justify-between items-center">
+<span class="text-xs uppercase opacity-70">Oscilloscope</span>
+<button class={`px-3 py-1 text-[10px] uppercase border border-[#141414] ${state.showOscilloscope ? 'bg-[#141414] text-[#E4E3E0]' : ''}`} on:click={() => state={...state, showOscilloscope:!state.showOscilloscope}}>{state.showOscilloscope ? 'ON' : 'OFF'}</button>
+</div>
+</section>
     <section class="space-y-4">
 <h2 class="text-xs font-bold uppercase tracking-widest border-b border-[#141414] pb-2">Presets</h2>
 <div class="flex gap-2">
