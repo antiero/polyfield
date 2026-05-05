@@ -3,10 +3,11 @@ import { onMount } from 'svelte';
 import ControlPanel from '$lib/components/ControlPanel.svelte';
 import TouchSurface from '$lib/components/TouchSurface.svelte';
 import PolyfieldHeader from '$lib/components/PolyfieldHeader.svelte';
+import Oscilloscope from '$lib/components/Oscilloscope.svelte';
 import { audio, midi, getNoteInScale } from '$lib/audio/engine';
 import type { AppState } from '$lib/types';
 
-const INITIAL_STATE: AppState = { scale: 'PentatonicMinor', rootNote: 48, voicesActive: [true,true,true,false], intervals: [0,2,0,2], waveform: 'sawtooth', gridSteps: 21, motionMode: 'free', bpm: 120, clockSource: 'internal', mpeEnabled: false, midiChannel: 1, touchMode: 'mono', delayEnabled: true, delayMix: 0.5 };
+const INITIAL_STATE: AppState = { scale: 'PentatonicMinor', rootNote: 48, voicesActive: [true,true,true,false], intervals: [0,2,0,2], waveform: 'sawtooth', gridSteps: 21, motionMode: 'free', bpm: 120, clockSource: 'internal', mpeEnabled: false, midiChannel: 1, touchMode: 'mono', delayEnabled: true, delayMix: 0.5, showOscilloscope: false };
 let state: AppState = { ...INITIAL_STATE };
 let pointerNotes = new Set<number>(), midiNotes = new Set<number>();
 let pointers: Record<number,{x:number;y:number;notes:number[]}> = {};
@@ -44,6 +45,11 @@ onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ 
 <div class="h-dvh min-h-screen bg-[#E4E3E0] text-[#141414] font-mono flex flex-col selection:bg-[#F27D26] selection:text-white overflow-hidden">
 <PolyfieldHeader midiConnected={midiOutputs.length > 0} onToggleControls={() => isControlsOpen = !isControlsOpen} />
 <main class="flex-1 flex overflow-hidden relative">
+{#if state.showOscilloscope}
+<div class="absolute bottom-3 right-3 z-30 w-56 h-14 opacity-70 pointer-events-none">
+<Oscilloscope analyser={audio.getAnalyser()} />
+</div>
+{/if}
 {#if isControlsOpen || isDesktopLayout}
 <ControlPanel bind:state bind:selectedMidiOut {midiOutputs} mobile={!isDesktopLayout} onClose={() => isControlsOpen = false} />{/if}
 <TouchSurface {state} pointers={pointers as any} {activeNotes} {isControlsOpen} onOpenControls={() => isControlsOpen=true} {pointerDown} {pointerMove} {pointerUp} bind:surfaceRef />

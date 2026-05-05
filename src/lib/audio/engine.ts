@@ -40,12 +40,16 @@ export class AudioEngine {
   delayFeedback: GainNode | null = null;
   dryGain: GainNode | null = null;
   wetGain: GainNode | null = null;
+  outputTap: GainNode | null = null;
+  analyser: AnalyserNode | null = null;
   voices: Map<number, { osc: OscillatorNode, gain: GainNode, timeoutId?: any }> = new Map();
   waveform: OscillatorType = 'sawtooth';
 
   init() {
     if (!this.ctx) {
-      this.ctx = new AudioContext();
+      const AudioContextCtor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextCtor) throw new Error('Web Audio API is not supported in this browser');
+      this.ctx = new AudioContextCtor();
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = 0.3; // Lower volume to prevent clipping
       
@@ -85,13 +89,26 @@ export class AudioEngine {
       this.delay.connect(this.wetGain);
       this.wetGain.connect(this.compressor);
 
-      this.compressor.connect(this.ctx.destination);
+      this.outputTap = this.ctx.createGain();
+      this.outputTap.gain.value = 1;
+      this.analyser = this.ctx.createAnalyser();
+      this.analyser.fftSize = 2048;
+      this.analyser.smoothingTimeConstant = 0.8;
+
+      this.compressor.connect(this.outputTap);
+      this.outputTap.connect(this.analyser);
+      this.outputTap.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx.state !== 'running') {
+      void this.ctx.resume();
     }
   }
 
+
+
+  getAnalyser() {
+    return this.analyser;
+  }
   setWaveform(wf: OscillatorType) {
     this.waveform = wf;
     this.voices.forEach(v => v.osc.type = wf);
