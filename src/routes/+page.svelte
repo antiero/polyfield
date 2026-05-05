@@ -11,7 +11,7 @@ let state: AppState = { ...INITIAL_STATE };
 let pointerNotes = new Set<number>(), midiNotes = new Set<number>();
 let pointers: Record<number,{x:number;y:number;notes:number[]}> = {};
 let midiOutputs:{id:string;name:string|null}[] = []; let selectedMidiOut='';
-let isControlsOpen = false, isDesktopLayout = true; let isSurfaceFullscreen = false; let surfaceRef: HTMLDivElement; let appRootRef: HTMLDivElement;
+let isControlsOpen = false, isDesktopLayout = true; let surfaceRef: HTMLDivElement;
 let tickCount = 0; let timer: ReturnType<typeof setInterval> | null = null; let arpIndex=0;
 
 $: activeNotes = new Set([...pointerNotes, ...midiNotes]);
@@ -34,24 +34,6 @@ $: if (state.clockSource || state.bpm) setupClock();
 
 
 
-async function toggleSurfaceFullscreen(){
-	if(!appRootRef) return;
-	if(!document.fullscreenElement){
-		await appRootRef.requestFullscreen();
-		isSurfaceFullscreen = true;
-		isControlsOpen = false;
-		return;
-	}
-	await document.exitFullscreen();
-}
-
-onMount(() => {
-	const onFsChange = () => {
-		isSurfaceFullscreen = !!document.fullscreenElement;
-	};
-	document.addEventListener('fullscreenchange', onFsChange);
-	return () => document.removeEventListener('fullscreenchange', onFsChange);
-});
 function pointerDown(e: PointerEvent){ audio.init(); surfaceRef.setPointerCapture(e.pointerId); const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const notes=calculateNotes(x,y); pointers = state.touchMode==='mono' ? {[e.pointerId]:{x,y,notes}} : {...pointers,[e.pointerId]:{x,y,notes}}; }
 function pointerMove(e: PointerEvent){ if(!pointers[e.pointerId]) return; const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); pointers={...pointers,[e.pointerId]:{x,y,notes:calculateNotes(x,y)}}; }
 function pointerUp(e: PointerEvent){ const n={...pointers}; delete n[e.pointerId]; pointers=n; if(surfaceRef?.hasPointerCapture(e.pointerId)) surfaceRef.releasePointerCapture(e.pointerId); }
@@ -59,11 +41,10 @@ function pointerUp(e: PointerEvent){ const n={...pointers}; delete n[e.pointerId
 onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ isDesktopLayout=window.innerWidth>=1280; if(isDesktopLayout) isControlsOpen=false; }; window.addEventListener('resize',resize); void midi.init().then(() => { midiOutputs=midi.getOutputs(); if(midiOutputs[0]) selectedMidiOut=midiOutputs[0].id; }); midi.onNoteOn=(note,velocity)=>{ audio.init(); audio.playNote(note,velocity); midiNotes = new Set(midiNotes).add(note); }; midi.onNoteOff=(note)=>{ audio.stopNote(note); const n=new Set(midiNotes); n.delete(note); midiNotes=n; }; setupClock(); return ()=>{ window.removeEventListener('resize',resize); if(timer) clearInterval(timer); }; });
 </script>
 
-<div bind:this={appRootRef} class="h-dvh min-h-screen bg-[#E4E3E0] text-[#141414] font-mono flex flex-col selection:bg-[#F27D26] selection:text-white overflow-hidden">
+<div class="h-dvh min-h-screen bg-[#E4E3E0] text-[#141414] font-mono flex flex-col selection:bg-[#F27D26] selection:text-white overflow-hidden">
 <PolyfieldHeader midiConnected={midiOutputs.length > 0} onToggleControls={() => isControlsOpen = !isControlsOpen} />
 <main class="flex-1 flex overflow-hidden relative">
-{#if (isControlsOpen || isDesktopLayout) && !isSurfaceFullscreen}
+{#if isControlsOpen || isDesktopLayout}
 <ControlPanel bind:state bind:selectedMidiOut {midiOutputs} mobile={!isDesktopLayout} onClose={() => isControlsOpen = false} />{/if}
-{#if isControlsOpen}<button class="fixed inset-0 bg-black/40 z-30 xl:hidden" on:click={() => isControlsOpen=false} aria-label="Close settings backdrop"></button>{/if}
-<TouchSurface {state} pointers={pointers as any} {activeNotes} {isControlsOpen} {isSurfaceFullscreen} onOpenControls={() => isControlsOpen=true} onToggleFullscreen={toggleSurfaceFullscreen} {pointerDown} {pointerMove} {pointerUp} bind:surfaceRef />
+<TouchSurface {state} pointers={pointers as any} {activeNotes} {isControlsOpen} onOpenControls={() => isControlsOpen=true} {pointerDown} {pointerMove} {pointerUp} bind:surfaceRef />
 </main></div>
