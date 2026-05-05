@@ -104,6 +104,18 @@ export class AudioEngine {
     }
   }
 
+  async unlock() {
+    this.init();
+    if (this.ctx && this.ctx.state !== 'running') {
+      await this.ctx.resume();
+    }
+    return this.ctx?.state === 'running';
+  }
+
+  isRunning() {
+    return this.ctx?.state === 'running';
+  }
+
 
 
   getAnalyser() {

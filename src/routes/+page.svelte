@@ -14,6 +14,8 @@ let pointers: Record<number,{x:number;y:number;notes:number[]}> = {};
 let midiOutputs:{id:string;name:string|null}[] = []; let selectedMidiOut='';
 let isControlsOpen = false, isDesktopLayout = true; let surfaceRef: HTMLDivElement;
 let tickCount = 0; let timer: ReturnType<typeof setInterval> | null = null; let arpIndex=0;
+let audioReady = false;
+let audioActivationPending = false;
 
 $: activeNotes = new Set([...pointerNotes, ...midiNotes]);
 $: allHeldNotes = Array.from(new Set(Object.values(pointers).flatMap((p) => p.notes))).sort((a,b)=>a-b);
@@ -35,11 +37,25 @@ $: if (state.clockSource || state.bpm) setupClock();
 
 
 
-function pointerDown(e: PointerEvent){ audio.init(); surfaceRef.setPointerCapture(e.pointerId); const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const notes=calculateNotes(x,y); pointers = state.touchMode==='mono' ? {[e.pointerId]:{x,y,notes}} : {...pointers,[e.pointerId]:{x,y,notes}}; }
+async function activateAudio(){
+  if (audioActivationPending) return;
+  audioActivationPending = true;
+  try {
+    audioReady = await audio.unlock();
+  } catch {
+    audioReady = false;
+  } finally {
+    audioActivationPending = false;
+  }
+}
+
+async function pointerDown(e: PointerEvent){
+  await activateAudio();
+  surfaceRef.setPointerCapture(e.pointerId); const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); const notes=calculateNotes(x,y); pointers = state.touchMode==='mono' ? {[e.pointerId]:{x,y,notes}} : {...pointers,[e.pointerId]:{x,y,notes}}; }
 function pointerMove(e: PointerEvent){ if(!pointers[e.pointerId]) return; const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); pointers={...pointers,[e.pointerId]:{x,y,notes:calculateNotes(x,y)}}; }
 function pointerUp(e: PointerEvent){ const n={...pointers}; delete n[e.pointerId]; pointers=n; if(surfaceRef?.hasPointerCapture(e.pointerId)) surfaceRef.releasePointerCapture(e.pointerId); }
 
-onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ isDesktopLayout=window.innerWidth>=1280; if(isDesktopLayout) isControlsOpen=false; }; window.addEventListener('resize',resize); void midi.init().then(() => { midiOutputs=midi.getOutputs(); if(midiOutputs[0]) selectedMidiOut=midiOutputs[0].id; }); midi.onNoteOn=(note,velocity)=>{ audio.init(); audio.playNote(note,velocity); midiNotes = new Set(midiNotes).add(note); }; midi.onNoteOff=(note)=>{ audio.stopNote(note); const n=new Set(midiNotes); n.delete(note); midiNotes=n; }; setupClock(); return ()=>{ window.removeEventListener('resize',resize); if(timer) clearInterval(timer); }; });
+onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ isDesktopLayout=window.innerWidth>=1280; if(isDesktopLayout) isControlsOpen=false; }; window.addEventListener('resize',resize); void midi.init().then(() => { midiOutputs=midi.getOutputs(); if(midiOutputs[0]) selectedMidiOut=midiOutputs[0].id; }); midi.onNoteOn=(note,velocity)=>{ audio.init(); audioReady = audio.isRunning(); audio.playNote(note,velocity); midiNotes = new Set(midiNotes).add(note); }; midi.onNoteOff=(note)=>{ audio.stopNote(note); const n=new Set(midiNotes); n.delete(note); midiNotes=n; }; setupClock(); return ()=>{ window.removeEventListener('resize',resize); if(timer) clearInterval(timer); }; });
 </script>
 
 <div class="h-dvh min-h-screen bg-[#E4E3E0] text-[#141414] font-mono flex flex-col selection:bg-[#F27D26] selection:text-white overflow-hidden">
@@ -52,5 +68,5 @@ onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ 
 {/if}
 {#if isControlsOpen || isDesktopLayout}
 <ControlPanel bind:state bind:selectedMidiOut {midiOutputs} mobile={!isDesktopLayout} onClose={() => isControlsOpen = false} />{/if}
-<TouchSurface {state} pointers={pointers as any} {activeNotes} {isControlsOpen} onOpenControls={() => isControlsOpen=true} {pointerDown} {pointerMove} {pointerUp} bind:surfaceRef />
+<TouchSurface {state} pointers={pointers as any} {activeNotes} {isControlsOpen} onOpenControls={() => isControlsOpen=true} {pointerDown} {pointerMove} {pointerUp} {audioReady} onActivateAudio={activateAudio} bind:surfaceRef />
 </main></div>
