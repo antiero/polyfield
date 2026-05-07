@@ -29,7 +29,13 @@ const calculateNotes=(x:number,y:number)=>{ const degreeX=Math.floor(x*state.gri
 function syncFree(){ if(state.motionMode!=='free'||!audioReady) return; const next = new Set(allHeldNotes); for(const n of pointerNotes) if(!next.has(n)&&!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);} for(const n of next) if(!pointerNotes.has(n)&&!midiNotes.has(n)){audio.playNote(n);midi.playNote(n);} pointerNotes = next; }
 function stepArp(){ if(state.motionMode!=='arp'||allHeldNotes.length===0) return; const note = allHeldNotes[arpIndex%allHeldNotes.length]; for(const n of pointerNotes) if(!midiNotes.has(n)&&n!==note){audio.stopNote(n);midi.stopNote(n);} if(!midiNotes.has(note)){audio.playNote(note);midi.playNote(note);} pointerNotes=new Set([note]); arpIndex++; }
 function resetArpIfEmpty(){ if(state.motionMode==='arp'&&allHeldNotes.length===0){ for(const n of pointerNotes) if(!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);} pointerNotes=new Set(); arpIndex=0; } }
-$: { const ready = audioReady; syncFree(); resetArpIfEmpty(); }
+$: {
+  // Explicit dependencies for Svelte's compile-time reactivity
+  const _deps = [audioReady, state.motionMode, allHeldNotes.length, pointerNotes.size, midiNotes.size];
+  void _deps;
+  syncFree();
+  resetArpIfEmpty();
+}
 
 function setupClock(){ if(timer) clearInterval(timer); midi.onClockTick=null; midi.onStart=null; midi.onStop=null; tickCount=0; if(state.clockSource==='internal'){ const tickMs = 60000/state.bpm/24; timer = setInterval(()=>{ midi.sendClock(); if(tickCount%6===0) stepArp(); tickCount++; }, tickMs); } else { midi.onClockTick=()=>{ if(tickCount%6===0) stepArp(); tickCount++; }; midi.onStart=()=>{tickCount=0; arpIndex=0;}; midi.onStop=()=>{tickCount=0;}; } }
 $: if (state.clockSource || state.bpm) setupClock();
