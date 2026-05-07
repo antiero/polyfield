@@ -3,7 +3,6 @@ import { onMount } from 'svelte';
 import ControlPanel from '$lib/components/ControlPanel.svelte';
 import TouchSurface from '$lib/components/TouchSurface.svelte';
 import PolyfieldHeader from '$lib/components/PolyfieldHeader.svelte';
-import Oscilloscope from '$lib/components/Oscilloscope.svelte';
 import { audio, midi, getNoteInScale } from '$lib/audio/engine';
 import type { AppState } from '$lib/types';
 
@@ -27,10 +26,10 @@ $: if (selectedMidiOut) midi.setOutput(selectedMidiOut);
 
 const calculateNotes=(x:number,y:number)=>{ const degreeX=Math.floor(x*state.gridSteps), degreeY=Math.floor((1-y)*state.gridSteps); const notes=new Set<number>(); if(state.voicesActive[0])notes.add(getNoteInScale(state.scale,state.rootNote,degreeX+state.intervals[0])); if(state.voicesActive[1])notes.add(getNoteInScale(state.scale,state.rootNote,degreeX+state.intervals[1])); if(state.voicesActive[2])notes.add(getNoteInScale(state.scale,state.rootNote-12,degreeY+state.intervals[2])); if(state.voicesActive[3])notes.add(getNoteInScale(state.scale,state.rootNote-12,degreeY+state.intervals[3])); return Array.from(notes).sort((a,b)=>a-b); };
 
-function syncFree(){ if(state.motionMode!=='free') return; const next = new Set(allHeldNotes); for(const n of pointerNotes) if(!next.has(n)&&!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);} for(const n of next) if(!pointerNotes.has(n)&&!midiNotes.has(n)){audio.playNote(n);midi.playNote(n);} pointerNotes = next; }
+function syncFree(){ if(state.motionMode!=='free'||!audioReady) return; const next = new Set(allHeldNotes); for(const n of pointerNotes) if(!next.has(n)&&!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);} for(const n of next) if(!pointerNotes.has(n)&&!midiNotes.has(n)){audio.playNote(n);midi.playNote(n);} pointerNotes = next; }
 function stepArp(){ if(state.motionMode!=='arp'||allHeldNotes.length===0) return; const note = allHeldNotes[arpIndex%allHeldNotes.length]; for(const n of pointerNotes) if(!midiNotes.has(n)&&n!==note){audio.stopNote(n);midi.stopNote(n);} if(!midiNotes.has(note)){audio.playNote(note);midi.playNote(note);} pointerNotes=new Set([note]); arpIndex++; }
 function resetArpIfEmpty(){ if(state.motionMode==='arp'&&allHeldNotes.length===0){ for(const n of pointerNotes) if(!midiNotes.has(n)){audio.stopNote(n);midi.stopNote(n);} pointerNotes=new Set(); arpIndex=0; } }
-$: { syncFree(); resetArpIfEmpty(); }
+$: { const ready = audioReady; syncFree(); resetArpIfEmpty(); }
 
 function setupClock(){ if(timer) clearInterval(timer); midi.onClockTick=null; midi.onStart=null; midi.onStop=null; tickCount=0; if(state.clockSource==='internal'){ const tickMs = 60000/state.bpm/24; timer = setInterval(()=>{ midi.sendClock(); if(tickCount%6===0) stepArp(); tickCount++; }, tickMs); } else { midi.onClockTick=()=>{ if(tickCount%6===0) stepArp(); tickCount++; }; midi.onStart=()=>{tickCount=0; arpIndex=0;}; midi.onStop=()=>{tickCount=0;}; } }
 $: if (state.clockSource || state.bpm) setupClock();
@@ -42,8 +41,10 @@ async function activateAudio(){
   audioActivationPending = true;
   try {
     audioReady = await audio.unlock();
-  } catch {
+  } catch (error) {
+    console.debug('[polyfield] audio unlock failed', error);
     audioReady = false;
+    console.debug('[polyfield] audio unlock state', { running: audioReady });
   } finally {
     audioActivationPending = false;
   }
@@ -55,18 +56,13 @@ async function pointerDown(e: PointerEvent){
 function pointerMove(e: PointerEvent){ if(!pointers[e.pointerId]) return; const r=surfaceRef.getBoundingClientRect(); const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)); pointers={...pointers,[e.pointerId]:{x,y,notes:calculateNotes(x,y)}}; }
 function pointerUp(e: PointerEvent){ const n={...pointers}; delete n[e.pointerId]; pointers=n; if(surfaceRef?.hasPointerCapture(e.pointerId)) surfaceRef.releasePointerCapture(e.pointerId); }
 
-onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ isDesktopLayout=window.innerWidth>=1280; if(isDesktopLayout) isControlsOpen=false; }; window.addEventListener('resize',resize); void midi.init().then(() => { midiOutputs=midi.getOutputs(); if(midiOutputs[0]) selectedMidiOut=midiOutputs[0].id; }); midi.onNoteOn=(note,velocity)=>{ audio.init(); audioReady = audio.isRunning(); audio.playNote(note,velocity); midiNotes = new Set(midiNotes).add(note); }; midi.onNoteOff=(note)=>{ audio.stopNote(note); const n=new Set(midiNotes); n.delete(note); midiNotes=n; }; setupClock(); return ()=>{ window.removeEventListener('resize',resize); if(timer) clearInterval(timer); }; });
+onMount(() => { isDesktopLayout = window.innerWidth >= 1280; const resize=()=>{ isDesktopLayout=window.innerWidth>=1280; if(isDesktopLayout) isControlsOpen=false; }; const awakenAudio=()=>{ void activateAudio(); }; window.addEventListener('resize',resize); window.addEventListener('pointerdown',awakenAudio,{once:true}); void midi.init().then(() => { midiOutputs=midi.getOutputs(); if(midiOutputs[0]) selectedMidiOut=midiOutputs[0].id; }); midi.onNoteOn=(note,velocity)=>{ audio.init(); audioReady = audio.isRunning(); audio.playNote(note,velocity); midiNotes = new Set(midiNotes).add(note); }; midi.onNoteOff=(note)=>{ audio.stopNote(note); const n=new Set(midiNotes); n.delete(note); midiNotes=n; }; setupClock(); return ()=>{ window.removeEventListener('resize',resize); window.removeEventListener('pointerdown',awakenAudio); if(timer) clearInterval(timer); }; });
 </script>
 
 <div class="h-dvh min-h-screen bg-[#E4E3E0] text-[#141414] font-mono flex flex-col selection:bg-[#F27D26] selection:text-white overflow-hidden">
 <PolyfieldHeader midiConnected={midiOutputs.length > 0} onToggleControls={() => isControlsOpen = !isControlsOpen} />
 <main class="flex-1 flex overflow-hidden relative">
-{#if state.showOscilloscope}
-<div class="absolute bottom-3 right-3 z-30 w-56 h-14 opacity-70 pointer-events-none">
-<Oscilloscope analyser={audio.getAnalyser()} />
-</div>
-{/if}
 {#if isControlsOpen || isDesktopLayout}
-<ControlPanel bind:state bind:selectedMidiOut {midiOutputs} mobile={!isDesktopLayout} onClose={() => isControlsOpen = false} />{/if}
+<ControlPanel bind:state bind:selectedMidiOut {midiOutputs} mobile={!isDesktopLayout} onClose={() => isControlsOpen = false} analyser={audio.getAnalyser()} />{/if}
 <TouchSurface {state} pointers={pointers as any} {activeNotes} {isControlsOpen} onOpenControls={() => isControlsOpen=true} {pointerDown} {pointerMove} {pointerUp} {audioReady} onActivateAudio={activateAudio} bind:surfaceRef />
 </main></div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { X, Save, Download } from 'lucide-svelte';
   import { SCALES } from '$lib/audio/engine';
+  import Oscilloscope from '$lib/components/Oscilloscope.svelte';
   import type { AppState, Waveform } from '$lib/types';
 
   export let state: AppState;
@@ -8,6 +9,7 @@
   export let midiOutputs: { id: string; name: string | null }[] = [];
   export let mobile = false;
   export let onClose: () => void = () => {};
+  export let analyser: AnalyserNode | null = null;
 </script>
 
 <aside class="fixed inset-y-0 left-0 z-40 w-80 bg-[#E4E3E0] border-r border-[#141414] flex flex-col xl:static xl:z-0 xl:block">
@@ -97,6 +99,11 @@
 <span class="text-xs uppercase opacity-70">Oscilloscope</span>
 <button class={`px-3 py-1 text-[10px] uppercase border border-[#141414] ${state.showOscilloscope ? 'bg-[#141414] text-[#E4E3E0]' : ''}`} on:click={() => state={...state, showOscilloscope:!state.showOscilloscope}}>{state.showOscilloscope ? 'ON' : 'OFF'}</button>
 </div>
+{#if state.showOscilloscope}
+<div class="h-16 rounded border border-[#141414]/20 bg-white/40 p-1">
+  <Oscilloscope {analyser} width={300} height={56} />
+</div>
+{/if}
 </section>
     <section class="space-y-4">
 <h2 class="text-xs font-bold uppercase tracking-widest border-b border-[#141414] pb-2">Presets</h2>

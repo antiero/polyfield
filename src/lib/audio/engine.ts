@@ -109,7 +109,9 @@ export class AudioEngine {
     if (this.ctx && this.ctx.state !== 'running') {
       await this.ctx.resume();
     }
-    return this.ctx?.state === 'running';
+    const running = this.ctx?.state === 'running';
+    console.debug('[polyfield] audio unlock()', { state: this.ctx?.state, running });
+    return running;
   }
 
   isRunning() {
@@ -145,9 +147,13 @@ export class AudioEngine {
   }
 
   playNote(midiNote: number, velocity: number = 100) {
-    if (!this.ctx || !this.filter) return;
+    if (!this.ctx || !this.filter) {
+      console.debug('[polyfield] playNote skipped: audio graph not ready', { midiNote, velocity, hasCtx: Boolean(this.ctx), hasFilter: Boolean(this.filter) });
+      return;
+    }
     
     const now = this.ctx.currentTime;
+    console.debug('[polyfield] playNote', { midiNote, velocity, state: this.ctx.state });
     let voice = this.voices.get(midiNote);
     
     if (voice) {
