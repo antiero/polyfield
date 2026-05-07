@@ -9,7 +9,7 @@
   export let pointerUp: (e: PointerEvent) => void;
   export let surfaceRef: HTMLDivElement;
   export let audioReady = false;
-  export let onActivateAudio: () => void = () => {};
+  export let onActivateAudio: () => Promise<void> | void = () => {};
 </script>
 
 <div class="flex-1 relative bg-[#141414] touch-none overflow-hidden p-2 xl:p-8 flex items-center justify-center">
@@ -57,15 +57,10 @@
     {/if}
 
     {#if !audioReady}
-      <div class="absolute inset-0 flex items-center justify-center z-20">
-        <button
-          type="button"
-          class="px-4 py-2 text-xs xl:text-sm uppercase tracking-[0.16em] bg-[#F27D26] text-white border border-white/40 rounded"
-          on:pointerdown|preventDefault={onActivateAudio}
-          on:click|preventDefault={onActivateAudio}
-        >
-          Touch To Play
-        </button>
+      <div class="absolute inset-x-0 top-3 z-20 flex items-center justify-center pointer-events-none">
+        <div class="px-3 py-1 text-[10px] xl:text-xs uppercase tracking-[0.16em] bg-[#F27D26]/90 text-white border border-white/40 rounded">
+          Touch surface to enable audio
+        </div>
       </div>
     {/if}
 
